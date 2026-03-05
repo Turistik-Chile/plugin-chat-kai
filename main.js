@@ -68,6 +68,44 @@ function createChatWidget() {
                 background: var(--chat-bg);
             }
 
+            .skeleton {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px 0;
+            }
+
+            .skeleton-line {
+                height: 12px;
+                width: 100%;
+                background: #f3f4f6;
+                border-radius: 8px;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .skeleton-line.short {
+                width: 60%;
+                margin-left: auto;
+            }
+
+            .skeleton-line.long {
+                width: 85%;
+            }
+
+            .skeleton-line::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                transform: translateX(-100%);
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+                animation: shimmer 1.2s infinite;
+            }
+
+            @keyframes shimmer {
+                100% { transform: translateX(100%); }
+            }
+
             .message {
                 width: fit-content;
                 max-width: 78%;
@@ -239,16 +277,136 @@ function createChatWidget() {
     chatContainer.appendChild(messagesArea);
     chatContainer.appendChild(inputContainer);
 
+    const endpointUrl = 'https://kaimcp-a9h3ccb5fngxhmag.eastus-01.azurewebsites.net/api/uid_memoria';
+    const chatUrl = 'https://kaimcp-a9h3ccb5fngxhmag.eastus-01.azurewebsites.net/api/kai_chat_web';
+    let memoryLoaded = false;
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
+    }
+
+    function setCookie(name, value, days = 365) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+        const expires = `expires=${date.toUTCString()}`;
+        document.cookie = `${name}=${value}; ${expires}; path=/; SameSite=Lax`;
+    }
+
+    function showSkeleton() {
+        messagesArea.innerHTML = `
+            <div class="skeleton" aria-hidden="true">
+                <div class="skeleton-line long"></div>
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line long"></div>
+                <div class="skeleton-line short"></div>
+                <div class="skeleton-line long"></div>
+            </div>
+        `;
+    }
+
+    function removeSkeleton() {
+        const skeleton = messagesArea.querySelector('.skeleton');
+        if (skeleton) {
+            messagesArea.innerHTML = '';
+        }
+    }
+
+    function clearMessages() {
+        messagesArea.innerHTML = '';
+    }
+
+    function appendMessage(text, type) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}`;
+        messageDiv.textContent = text;
+        messagesArea.appendChild(messageDiv);
+    }
+
+    function showTypingIndicator() {
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message bot';
+        typingDiv.id = 'typing-indicator';
+        typingDiv.textContent = 'Escribiendo...';
+        messagesArea.appendChild(typingDiv);
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    function removeTypingIndicator() {
+        const el = document.getElementById('typing-indicator');
+        if (el) el.remove();
+    }
+
+    async function loadMemory() {
+        const existingUid = (getCookie('kai_uid') || '').trim();
+        try {
+            if (!existingUid) {
+                const res = await fetch(endpointUrl, { method: 'GET' });
+                if (!res.ok) throw new Error(`GET uid failed: ${res.status}`);
+                const data = await res.json();
+                console.log('Respuesta GET uid_memoria:', data);
+                if (data && data.uid) {
+                    setCookie('kai_uid', data.uid);
+                }
+                removeSkeleton();
+            } else {
+                const res = await fetch(endpointUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid: existingUid })
+                });
+                if (!res.ok) throw new Error(`POST memoria failed: ${res.status}`);
+                const data = await res.json();
+                if (data && Array.isArray(data.memoria_corta)) {
+                    clearMessages();
+                    data.memoria_corta.forEach((item) => {
+                        if (item.mensaje_usuario) appendMessage(item.mensaje_usuario, 'user');
+                        if (item.mensaje_bot) appendMessage(item.mensaje_bot, 'bot');
+                    });
+                } else {
+                    removeSkeleton();
+                }
+            }
+        } catch (err) {
+            removeSkeleton();
+            console.error('Error cargando memoria:', err);
+        } finally {
+            memoryLoaded = true;
+        }
+    }
+
     // Funcion para enviar mensaje
-    function sendMessage() {
+    async function sendMessage() {
         const message = messageInput.value.trim();
         if (message) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message user';
-            messageDiv.textContent = message;
-            messagesArea.appendChild(messageDiv);
+            appendMessage(message, 'user');
             messageInput.value = '';
             messagesArea.scrollTop = messagesArea.scrollHeight;
+            const uid = (getCookie('kai_uid') || '').trim();
+            let typingTimer = setTimeout(() => {
+                showTypingIndicator();
+            }, 3000);
+            try {
+                const res = await fetch(chatUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid, mensaje: message })
+                });
+                if (!res.ok) throw new Error(`POST kai_chat_web failed: ${res.status}`);
+                const data = await res.json();
+                clearTimeout(typingTimer);
+                removeTypingIndicator();
+                if (data && typeof data.body === 'string') {
+                    appendMessage(data.body, 'bot');
+                    messagesArea.scrollTop = messagesArea.scrollHeight;
+                }
+            } catch (err) {
+                clearTimeout(typingTimer);
+                removeTypingIndicator();
+                console.error('Error enviando mensaje:', err);
+            }
         }
     }
 
@@ -264,11 +422,17 @@ function createChatWidget() {
     chatButton.addEventListener('click', () => {
         isOpen = !isOpen;
         chatContainer.classList.toggle('is-open', isOpen);
+        if (isOpen && !memoryLoaded) {
+            showSkeleton();
+        }
     });
 
     // Agregar al body
     document.body.appendChild(chatButton);
     document.body.appendChild(chatContainer);
+
+    // Cargar memoria al iniciar
+    loadMemory();
 
     // Retornar el boton (la ventanilla)
     return chatButton;
