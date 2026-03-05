@@ -1,6 +1,6 @@
-﻿// FunciÃ³n que crea y retorna una ventanilla de chat flotante
+// Función que crea y retorna una ventanilla de chat flotante
 function createChatWidget() {
-    // Crear el botÃ³n flotante (ventanilla)
+    // Crear el botón flotante (ventanilla)
     const chatButton = document.createElement('div');
     chatButton.id = 'chat-button';
     chatButton.style.position = 'fixed';
@@ -19,7 +19,7 @@ function createChatWidget() {
     chatButton.style.fontWeight = 'bold';
     chatButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
     chatButton.style.zIndex = '2147483647';
-    chatButton.innerHTML = 'ðŸ’¬'; // Icono de chat
+    chatButton.innerHTML = '💬'; // Ícono de chat
 
     // Crear el contenedor del chat
     const chatContainer = document.createElement('div');
@@ -37,7 +37,7 @@ function createChatWidget() {
     chatContainer.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
     chatContainer.style.zIndex = '2147483647';
 
-    // Ãrea de mensajes
+    // Área de mensajes
     const messagesArea = document.createElement('div');
     messagesArea.id = 'messages-area';
     messagesArea.style.flex = '1';
@@ -77,18 +77,18 @@ function createChatWidget() {
     chatContainer.appendChild(messagesArea);
     chatContainer.appendChild(inputContainer);
 
-    // FunciÃ³n para enviar mensaje
+    // Función para enviar mensaje
     function sendMessage() {
         const message = messageInput.value.trim();
         if (message) {
             const messageDiv = document.createElement('div');
-            messageDiv.textContent = 'TÃº: ' + message;
+            messageDiv.textContent = 'Tú: ' + message;
             messageDiv.style.marginBottom = '5px';
             messageDiv.style.color = 'red';
             messagesArea.appendChild(messageDiv);
             messageInput.value = '';
             messagesArea.scrollTop = messagesArea.scrollHeight;
-            // AquÃ­ podrÃ­as agregar lÃ³gica para responder, pero por ahora solo muestra el mensaje
+            // Aquí podrías agregar lógica para responder, pero por ahora solo muestra el mensaje
         }
     }
 
@@ -110,7 +110,7 @@ function createChatWidget() {
     document.body.appendChild(chatButton);
     document.body.appendChild(chatContainer);
 
-    // Retornar el botÃ³n (la ventanilla)
+    // Retornar el botón (la ventanilla)
     return chatButton;
 }
 
