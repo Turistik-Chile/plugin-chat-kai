@@ -5,6 +5,7 @@ function createChatWidget() {
         const styleEl = document.createElement('style');
         styleEl.id = 'chat-widget-styles';
         styleEl.textContent = `
+            @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap');
             :root {
                 --chat-red: #ef4444;
                 --chat-red-soft: #fecaca;
@@ -27,6 +28,7 @@ function createChatWidget() {
             }
 
             #chat-container {
+                font-family: 'Open Sans', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
                 opacity: 0;
                 transform: translateY(10px);
                 transition: opacity 200ms ease, transform 240ms ease;
@@ -67,27 +69,33 @@ function createChatWidget() {
             }
 
             .message {
+                width: fit-content;
                 max-width: 78%;
                 padding: 8px 10px;
                 border-radius: 14px;
                 margin-bottom: 8px;
                 font-size: 13.5px;
                 line-height: 1.4;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+                box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+                white-space: pre-wrap;
+                overflow-wrap: anywhere;
+                word-break: break-word;
             }
 
             .message.user {
                 margin-left: auto;
-                background: var(--chat-red-pastel);
+                margin-right: 0;
+                background: #ffffff;
                 color: var(--chat-text);
-                border: 1px solid #f8b4b4;
+                border: 1px solid rgba(0,0,0,0.04);
             }
 
             .message.bot {
-                margin-right: auto;
-                background: #fff5f5;
+                margin-left: auto;
+                margin-right: 0;
+                background: #ffffff;
                 color: var(--chat-text);
-                border: 1px solid #ffe4e6;
+                border: 1px solid rgba(0,0,0,0.04);
             }
 
             #chat-input {
@@ -127,7 +135,7 @@ function createChatWidget() {
     chatButton.style.left = '20px';
     chatButton.style.width = '56px';
     chatButton.style.height = '56px';
-    chatButton.style.backgroundColor = '#ef4444';
+    chatButton.style.backgroundColor = '#d61a1a';
     chatButton.style.borderRadius = '50%';
     chatButton.style.cursor = 'pointer';
     chatButton.style.display = 'flex';
@@ -141,7 +149,7 @@ function createChatWidget() {
     chatButton.style.backdropFilter = 'blur(4px)';
     chatButton.innerHTML = `
         <span class="icon-slot" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>
+           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bot-message-square-icon lucide-bot-message-square"><path d="M12 6V2H8"/><path d="M15 11v2"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M20 16a2 2 0 0 1-2 2H8.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 4 20.286V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M9 11v2"/></svg>
         </span>
     `; // Placeholder de icono
 
@@ -166,11 +174,11 @@ function createChatWidget() {
     header.id = 'chat-header';
     header.innerHTML = `
         <span class="icon-slot" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bot-icon lucide-bot"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
         </span>
         <div>
-            <div id="chat-title">Asistente IA</div>
-            <div id="chat-status">En línea</div>
+            <div id="chat-title">Kai</div>
+            <div id="chat-status">Asistente virtual de Turistik</div>
         </div>
     `;
 
@@ -212,11 +220,11 @@ function createChatWidget() {
     sendButton.id = 'chat-send';
     sendButton.innerHTML = `
         <span class="icon-slot" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send-horizontal-icon lucide-send-horizontal"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>
         </span>
     `;
     sendButton.style.padding = '10px';
-    sendButton.style.backgroundColor = '#ef4444';
+    sendButton.style.backgroundColor = '#d61a1a';
     sendButton.style.color = 'white';
     sendButton.style.border = 'none';
     sendButton.style.borderRadius = '14px';
