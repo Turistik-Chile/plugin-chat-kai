@@ -106,6 +106,24 @@ function createChatWidget() {
                 100% { transform: translateX(100%); }
             }
 
+            .typing-dot {
+                width: 7px;
+                height: 7px;
+                display: inline-block;
+                background: var(--chat-red);
+                border-radius: 50%;
+                opacity: 0.35;
+                animation: typing-bounce 0.9s infinite ease-in-out;
+            }
+
+            .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+            .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+            @keyframes typing-bounce {
+                0%, 80%, 100% { transform: translateY(0) scale(0.9); opacity: 0.35; }
+                40% { transform: translateY(-4px) scale(1); opacity: 0.9; }
+            }
+
             .message {
                 width: fit-content;
                 max-width: 78%;
@@ -118,6 +136,17 @@ function createChatWidget() {
                 white-space: pre-wrap;
                 overflow-wrap: anywhere;
                 word-break: break-word;
+                opacity: 0;
+                transform: translateY(6px);
+                animation: message-fade-in 220ms ease-out forwards;
+            }
+            .message.typing-indicator {
+                padding: 6px 10px;
+                line-height: 1;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                min-height: 0;
             }
 
             .message.user {
@@ -129,11 +158,16 @@ function createChatWidget() {
             }
 
             .message.bot {
-                margin-left: auto;
-                margin-right: 0;
-                background: #ffffff;
+                margin-left: 0;
+                margin-right: auto;
+                background: #fff5f5;
                 color: var(--chat-text);
-                border: 1px solid rgba(0,0,0,0.04);
+                border: 1px solid rgba(239,68,68,0.18);
+            }
+
+            @keyframes message-fade-in {
+                from { opacity: 0; transform: translateY(6px); }
+                to { opacity: 1; transform: translateY(0); }
             }
 
             #chat-input {
@@ -325,13 +359,22 @@ function createChatWidget() {
         messagesArea.appendChild(messageDiv);
     }
 
+    function scrollToBottom() {
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
     function showTypingIndicator() {
         const typingDiv = document.createElement('div');
-        typingDiv.className = 'message bot';
+        typingDiv.className = 'message bot typing-indicator';
         typingDiv.id = 'typing-indicator';
-        typingDiv.textContent = 'Escribiendo...';
+        typingDiv.setAttribute('aria-label', 'Cargando');
+        typingDiv.innerHTML = `
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+        `;
         messagesArea.appendChild(typingDiv);
-        messagesArea.scrollTop = messagesArea.scrollHeight;
+        scrollToBottom();
     }
 
     function removeTypingIndicator() {
@@ -365,6 +408,7 @@ function createChatWidget() {
                         if (item.mensaje_usuario) appendMessage(item.mensaje_usuario, 'user');
                         if (item.mensaje_bot) appendMessage(item.mensaje_bot, 'bot');
                     });
+                    scrollToBottom();
                 } else {
                     removeSkeleton();
                 }
@@ -383,11 +427,10 @@ function createChatWidget() {
         if (message) {
             appendMessage(message, 'user');
             messageInput.value = '';
-            messagesArea.scrollTop = messagesArea.scrollHeight;
+            scrollToBottom();
             const uid = (getCookie('kai_uid') || '').trim();
-            let typingTimer = setTimeout(() => {
-                showTypingIndicator();
-            }, 3000);
+            showTypingIndicator();
+            let typingTimer = setTimeout(() => {}, 0);
             try {
                 const res = await fetch(chatUrl, {
                     method: 'POST',
@@ -395,12 +438,12 @@ function createChatWidget() {
                     body: JSON.stringify({ uid, mensaje: message })
                 });
                 if (!res.ok) throw new Error(`POST kai_chat_web failed: ${res.status}`);
-                const data = await res.json();
+                const text = await res.text();
                 clearTimeout(typingTimer);
                 removeTypingIndicator();
-                if (data && typeof data.body === 'string') {
-                    appendMessage(data.body, 'bot');
-                    messagesArea.scrollTop = messagesArea.scrollHeight;
+                if (text) {
+                    appendMessage(text, 'bot');
+                    scrollToBottom();
                 }
             } catch (err) {
                 clearTimeout(typingTimer);
