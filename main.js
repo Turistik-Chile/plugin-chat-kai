@@ -19,7 +19,15 @@ function createChatWidget() {
     chatButton.style.fontWeight = 'bold';
     chatButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
     chatButton.style.zIndex = '2147483647';
-    chatButton.innerHTML = '💬'; // Ícono de chat
+            chatButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 8V4H8"/>
+            <rect x="4" y="8" width="16" height="12" rx="2"/>
+            <path d="M8 16h8"/>
+            <path d="M8 12h2"/>
+            <path d="M14 12h2"/>
+        </svg>
+    `; // Icono IA (Lucide: bot)
 
     // Crear el contenedor del chat
     const chatContainer = document.createElement('div');
@@ -114,6 +122,6 @@ function createChatWidget() {
     return chatButton;
 }
 
-// Llamar a la funciÃ³n para crear la ventanilla
+// Llamar a la función para crear la ventanilla
 createChatWidget();
 
