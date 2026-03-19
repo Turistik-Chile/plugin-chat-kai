@@ -430,9 +430,8 @@ function createChatWidget() {
     inputContainer.style.borderBottomLeftRadius = '20px';
     inputContainer.style.borderBottomRightRadius = '20px';
 
-    const messageInput = document.createElement('input');
+    const messageInput = document.createElement('textarea');
     messageInput.id = 'chat-input';
-    messageInput.type = 'text';
     messageInput.placeholder = 'Escribe un mensaje...';
     messageInput.style.flex = '1';
     messageInput.style.padding = '10px 12px';
@@ -441,6 +440,9 @@ function createChatWidget() {
     messageInput.style.color = '#111111';
     messageInput.style.background = '#fff5f5';
     messageInput.style.outline = 'none';
+    messageInput.rows = 1;
+    messageInput.style.resize = 'none';
+    messageInput.style.lineHeight = '1.35';
 
     const sendButton = document.createElement('button');
     sendButton.id = 'chat-send';
@@ -635,6 +637,49 @@ function createChatWidget() {
         } finally {
             memoryLoaded = true;
         }
+    }
+
+    function parseBooleanParam(value) {
+        if (value == null) return null;
+        const normalized = String(value).trim().toLowerCase();
+        if (normalized === 'true') return true;
+        if (normalized === 'false') return false;
+        return null;
+    }
+
+    let autoMessageHandled = false;
+    function handleAutoMessageFromUrl() {
+        if (autoMessageHandled) return;
+
+        const params = new URLSearchParams(window.location.search);
+        const uidParam = params.get('uid');
+        const autorizadoParam = params.get('autorizado');
+        const autorizado = parseBooleanParam(autorizadoParam);
+
+        const hasAutoParams = uidParam !== null || autorizadoParam !== null;
+
+        if (uidParam) {
+            setCookie('kai_uid', uidParam);
+        }
+
+        if (hasAutoParams && !isOpen) {
+            isOpen = true;
+            chatContainer.classList.add('is-open');
+        }
+
+        if (autorizado === null) return;
+        autoMessageHandled = true;
+
+        showTypingIndicator();
+
+        setTimeout(() => {
+            removeTypingIndicator();
+            const texto = autorizado
+                ? 'Tu pago fue autorizado'
+                : 'Hubo un error con la autorización del pago';
+            appendMessage(texto, 'bot');
+            scrollToBottom();
+        }, 2200);
     }
 
     function createBotMessageElement() {
@@ -1161,7 +1206,7 @@ function createChatWidget() {
             const res = await fetch(chatUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid, mensaje: message }),
+                body: JSON.stringify({ uid, mensaje: message, origen: window.location.href }),
                 signal: activeAbortController.signal
             });
 
@@ -1230,8 +1275,9 @@ function createChatWidget() {
 
     sendButton.addEventListener('click', sendMessage);
 
-    messageInput.addEventListener('keypress', (e) => {
+    messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
             sendMessage();
         }
     });
@@ -1247,7 +1293,7 @@ function createChatWidget() {
     document.body.appendChild(chatButton);
     document.body.appendChild(chatContainer);
 
-    loadMemory();
+    loadMemory().then(handleAutoMessageFromUrl);
 
     return chatButton;
 }
