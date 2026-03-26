@@ -113,7 +113,7 @@ function createChatWidget() {
             }
 
             #chat-expand {
-                margin-left: auto;
+                margin-left: 0;
                 border: none;
                 background: transparent;
                 color: #ffffff;
@@ -350,6 +350,68 @@ function createChatWidget() {
                 display: block;
                 color: #ffffff;
             }
+
+            .lang-picker {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                margin-left: auto;
+            }
+
+            .flag-button,
+            .flag-option {
+                width: 26px;
+                height: 18px;
+                border-radius: 4px;
+                border: 1px solid rgba(255,255,255,0.6);
+                cursor: pointer;
+                padding: 0;
+                background-color: transparent;
+                background-size: cover;
+                background-position: center;
+                background-repeat: no-repeat;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            }
+
+            .flag-button:focus-visible,
+            .flag-option:focus-visible {
+                outline: 2px solid #ffffff;
+                outline-offset: 2px;
+            }
+
+            .flag-menu {
+                position: absolute;
+                right: calc(100% + 8px);
+                top: 50%;
+                transform: translateY(-50%);
+                display: flex;
+                gap: 6px;
+                padding: 4px;
+                background: rgba(255,255,255,0.95);
+                border-radius: 10px;
+                box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 160ms ease, transform 160ms ease;
+            }
+
+            .flag-menu.is-open {
+                opacity: 1;
+                pointer-events: auto;
+                transform: translateY(-50%) translateX(-2px);
+            }
+
+            .flag-es {
+                background-image: url('https://flagcdn.com/w40/es.png');
+            }
+
+            .flag-us {
+                background-image: url('https://flagcdn.com/w40/us.png');
+            }
+
+            .flag-br {
+                background-image: url('https://flagcdn.com/w40/br.png');
+            }
         `;
         document.head.appendChild(styleEl);
     }
@@ -405,6 +467,10 @@ function createChatWidget() {
         <div>
             <div id="chat-title">Kai</div>
             <div id="chat-status">Asistente virtual de Turistik</div>
+        </div>
+        <div class="lang-picker">
+            <button id="lang-current" class="flag-button flag-es" type="button" aria-label="Idioma: Español"></button>
+            <div id="lang-menu" class="flag-menu" role="menu" aria-hidden="true"></div>
         </div>
         <button id="chat-expand" type="button" aria-label="Expandir chat">▲</button>
         <button id="chat-close" type="button" aria-label="Cerrar chat">✕</button>
@@ -475,6 +541,70 @@ function createChatWidget() {
     let isOpen = false;
     let memoryLoaded = false;
     let activeAbortController = null;
+    let selectedLanguage = 'ESP';
+
+    const LANG_OPTIONS = {
+        ESP: { className: 'flag-es', label: 'Idioma: Español' },
+        ENG: { className: 'flag-us', label: 'Language: English' },
+        POR: { className: 'flag-br', label: 'Idioma: Português' }
+    };
+
+    const langPicker = header.querySelector('.lang-picker');
+    const langCurrent = header.querySelector('#lang-current');
+    const langMenu = header.querySelector('#lang-menu');
+
+    function applyLanguage(lang) {
+        selectedLanguage = lang;
+        if (!langCurrent) return;
+        langCurrent.classList.remove('flag-es', 'flag-us', 'flag-br');
+        const option = LANG_OPTIONS[lang];
+        if (!option) return;
+        langCurrent.classList.add(option.className);
+        langCurrent.setAttribute('aria-label', option.label);
+    }
+
+    function renderLangMenu() {
+        if (!langMenu) return;
+        const options = Object.entries(LANG_OPTIONS)
+            .filter(([lang]) => lang !== selectedLanguage)
+            .map(([lang, option]) => {
+                return `<button class="flag-option ${option.className}" type="button" data-lang="${lang}" aria-label="${option.label}"></button>`;
+            })
+            .join('');
+        langMenu.innerHTML = options;
+    }
+
+    function setMenuOpen(isOpenMenu) {
+        if (!langMenu) return;
+        langMenu.classList.toggle('is-open', isOpenMenu);
+        langMenu.setAttribute('aria-hidden', isOpenMenu ? 'false' : 'true');
+        if (isOpenMenu) {
+            renderLangMenu();
+        }
+    }
+
+    if (langCurrent && langMenu) {
+        langCurrent.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const isOpenMenu = langMenu.classList.contains('is-open');
+            setMenuOpen(!isOpenMenu);
+        });
+
+        langMenu.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) return;
+            const lang = target.getAttribute('data-lang');
+            if (!lang) return;
+            applyLanguage(lang);
+            setMenuOpen(false);
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!langPicker) return;
+            if (langPicker.contains(event.target)) return;
+            setMenuOpen(false);
+        });
+    }
 
     const closeButton = header.querySelector('#chat-close');
     const expandButton = header.querySelector('#chat-expand');
@@ -1206,7 +1336,12 @@ function createChatWidget() {
             const res = await fetch(chatUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid, mensaje: message, origen: window.location.href }),
+                body: JSON.stringify({
+                    uid,
+                    mensaje: message,
+                    origen: window.location.href,
+                    idioma: selectedLanguage
+                }),
                 signal: activeAbortController.signal
             });
 
