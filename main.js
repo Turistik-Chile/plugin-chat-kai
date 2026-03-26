@@ -568,6 +568,7 @@ function createChatWidget() {
     let cooldownUntil = 0;
     let cooldownInterval = null;
     const COOLDOWN_MS = 10000;
+    let loadingLock = true;
 
     const LANG_OPTIONS = {
         ESP: { className: 'flag-es', label: 'Idioma: Español' },
@@ -658,7 +659,28 @@ function createChatWidget() {
     const chatUrl = 'https://kaimcp-a9h3ccb5fngxhmag.eastus-01.azurewebsites.net/api/kai_chat_web';
     const DEBUG_SSE = false;
 
+    function setLoadingState(isLoading) {
+        loadingLock = isLoading;
+        if (isLoading) {
+            sendButton.classList.add('is-cooldown');
+            sendButton.removeAttribute('data-cooldown');
+            sendButton.setAttribute('aria-label', 'Enviando deshabilitado. Cargando historial');
+            sendButton.style.backgroundColor = '#9ca3af';
+            sendButton.disabled = true;
+            return;
+        }
+        updateCooldownUi();
+    }
+
     function updateCooldownUi() {
+        if (loadingLock) {
+            sendButton.classList.add('is-cooldown');
+            sendButton.removeAttribute('data-cooldown');
+            sendButton.setAttribute('aria-label', 'Enviando deshabilitado. Cargando historial');
+            sendButton.style.backgroundColor = '#9ca3af';
+            sendButton.disabled = true;
+            return;
+        }
         const remaining = Math.max(0, cooldownUntil - Date.now());
         if (remaining <= 0) {
             sendButton.classList.remove('is-cooldown');
@@ -695,7 +717,7 @@ function createChatWidget() {
 
     function isCooldownActive() {
         const now = Date.now();
-        return now < cooldownUntil || now - lastSendAt < COOLDOWN_MS;
+        return loadingLock || now < cooldownUntil || now - lastSendAt < COOLDOWN_MS;
     }
 
     function getCookie(name) {
@@ -791,6 +813,7 @@ function createChatWidget() {
     }
 
     async function loadMemory() {
+        setLoadingState(true);
         const existingUid = (getCookie('kai_uid') || '').trim();
 
         try {
@@ -832,6 +855,7 @@ function createChatWidget() {
             console.error('Error cargando memoria:', err);
         } finally {
             memoryLoaded = true;
+            setLoadingState(false);
         }
     }
 
