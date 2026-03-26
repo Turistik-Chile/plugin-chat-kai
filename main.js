@@ -338,7 +338,9 @@ function createChatWidget() {
             }
 
             #chat-send.is-cooldown {
-                filter: brightness(0.92);
+                background: #9ca3af;
+                filter: none;
+                cursor: not-allowed;
             }
 
             #chat-send.is-cooldown::after {
@@ -662,6 +664,7 @@ function createChatWidget() {
             sendButton.classList.remove('is-cooldown');
             sendButton.removeAttribute('data-cooldown');
             sendButton.setAttribute('aria-label', 'Enviar mensaje');
+            sendButton.disabled = false;
             return;
         }
 
@@ -669,6 +672,7 @@ function createChatWidget() {
         sendButton.classList.add('is-cooldown');
         sendButton.setAttribute('data-cooldown', `${seconds}s`);
         sendButton.setAttribute('aria-label', `Enviar mensaje. Espera ${seconds} segundos`);
+        sendButton.disabled = true;
     }
 
     function startCooldownTimer() {
