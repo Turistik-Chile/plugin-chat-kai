@@ -542,6 +542,7 @@ function createChatWidget() {
     let memoryLoaded = false;
     let activeAbortController = null;
     let selectedLanguage = 'ESP';
+    let lastSendAt = 0;
 
     const LANG_OPTIONS = {
         ESP: { className: 'flag-es', label: 'Idioma: Español' },
@@ -1305,6 +1306,12 @@ function createChatWidget() {
         const userMessageEl = appendMessage(message, 'user');
         messageInput.value = '';
         scrollToBottom();
+
+        const now = Date.now();
+        if (now - lastSendAt < 10000) {
+            return;
+        }
+        lastSendAt = now;
 
         const uid = (getCookie('kai_uid') || '').trim();
         updateMessageStatus(userMessageEl, 'delivered');
