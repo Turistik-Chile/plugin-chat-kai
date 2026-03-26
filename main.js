@@ -588,6 +588,7 @@ function createChatWidget() {
         if (!option) return;
         langCurrent.classList.add(option.className);
         langCurrent.setAttribute('aria-label', option.label);
+        setCookie('kai_lang', lang, 365);
     }
 
     function renderLangMenu() {
@@ -611,6 +612,13 @@ function createChatWidget() {
     }
 
     if (langCurrent && langMenu) {
+        const storedLang = (getCookie('kai_lang') || '').trim();
+        if (LANG_OPTIONS[storedLang]) {
+            applyLanguage(storedLang);
+        } else {
+            applyLanguage(selectedLanguage);
+        }
+
         langCurrent.addEventListener('click', (event) => {
             event.stopPropagation();
             const isOpenMenu = langMenu.classList.contains('is-open');
