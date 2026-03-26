@@ -664,6 +664,7 @@ function createChatWidget() {
             sendButton.classList.remove('is-cooldown');
             sendButton.removeAttribute('data-cooldown');
             sendButton.setAttribute('aria-label', 'Enviar mensaje');
+            sendButton.style.backgroundColor = '#d61a1a';
             sendButton.disabled = false;
             return;
         }
@@ -672,6 +673,7 @@ function createChatWidget() {
         sendButton.classList.add('is-cooldown');
         sendButton.setAttribute('data-cooldown', `${seconds}s`);
         sendButton.setAttribute('aria-label', `Enviar mensaje. Espera ${seconds} segundos`);
+        sendButton.style.backgroundColor = '#9ca3af';
         sendButton.disabled = true;
     }
 
@@ -689,6 +691,11 @@ function createChatWidget() {
                 updateCooldownUi();
             }
         }, 250);
+    }
+
+    function isCooldownActive() {
+        const now = Date.now();
+        return now < cooldownUntil || now - lastSendAt < COOLDOWN_MS;
     }
 
     function getCookie(name) {
@@ -1361,15 +1368,15 @@ function createChatWidget() {
         const message = messageInput.value.trim();
         if (!message) return;
 
+        if (isCooldownActive()) {
+            return;
+        }
+
         const userMessageEl = appendMessage(message, 'user');
         messageInput.value = '';
         scrollToBottom();
 
-        const now = Date.now();
-        if (now < cooldownUntil || now - lastSendAt < COOLDOWN_MS) {
-            return;
-        }
-        lastSendAt = now;
+        lastSendAt = Date.now();
         startCooldownTimer();
 
         const uid = (getCookie('kai_uid') || '').trim();
@@ -1475,6 +1482,9 @@ function createChatWidget() {
     messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            if (isCooldownActive()) {
+                return;
+            }
             sendMessage();
         }
     });
