@@ -265,6 +265,22 @@ function createChatWidget() {
                 padding: 0;
             }
 
+            .message.bot.payment-success,
+            .message.bot.payment-fail {
+                background: #dcfce7;
+                color: #14532d;
+                border: 1px solid rgba(20,83,45,0.15);
+                padding: 10px 12px;
+                border-radius: 14px;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            }
+
+            .message.bot.payment-fail {
+                background: #fee2e2;
+                color: #7f1d1d;
+                border: 1px solid rgba(127,29,29,0.18);
+            }
+
             .message.bot a {
                 color: #b91c1c;
                 text-decoration: underline;
@@ -786,6 +802,15 @@ function createChatWidget() {
         return messageDiv;
     }
 
+    function appendPaymentMessage(text, status) {
+        const messageDiv = document.createElement('div');
+        const statusClass = status === 'success' ? 'payment-success' : 'payment-fail';
+        messageDiv.className = `message bot ${statusClass}`;
+        messageDiv.textContent = text;
+        messagesArea.appendChild(messageDiv);
+        return messageDiv;
+    }
+
     function updateMessageStatus(messageEl, status) {
         if (!messageEl) return;
         const statusEl = messageEl.querySelector('.message-status');
@@ -870,8 +895,8 @@ function createChatWidget() {
     function parseBooleanParam(value) {
         if (value == null) return null;
         const normalized = String(value).trim().toLowerCase();
-        if (normalized === 'true') return true;
-        if (normalized === 'false') return false;
+        if (normalized === 'gjbdfp433nkng3') return true;
+        if (normalized === 'fg4gk3p21lasjd') return false;
         return null;
     }
 
@@ -881,7 +906,7 @@ function createChatWidget() {
 
         const params = new URLSearchParams(window.location.search);
         const uidParam = params.get('uid');
-        const autorizadoParam = params.get('autorizado');
+        const autorizadoParam = params.get('kihp23ldsk');
         const autorizado = parseBooleanParam(autorizadoParam);
 
         const hasAutoParams = uidParam !== null || autorizadoParam !== null;
@@ -902,10 +927,11 @@ function createChatWidget() {
 
         setTimeout(() => {
             removeTypingIndicator();
-            const texto = autorizado
-                ? 'Tu pago fue autorizado'
-                : 'Hubo un error con la autorización del pago';
-            appendMessage(texto, 'bot');
+            if (autorizado) {
+                appendPaymentMessage('✅ Tu pago fue autorizado. Hemos enviado la boleta a tu correo electrónico.', 'success');
+            } else {
+                appendPaymentMessage('❌ Hubo un error con la autorización del pago', 'fail');
+            }
             scrollToBottom();
         }, 2200);
     }
