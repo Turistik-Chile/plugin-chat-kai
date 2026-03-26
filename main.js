@@ -330,10 +330,30 @@ function createChatWidget() {
 
             #chat-send {
                 background: var(--chat-red);
+                position: relative;
             }
 
             #chat-send:hover {
                 filter: brightness(0.96);
+            }
+
+            #chat-send.is-cooldown {
+                filter: brightness(0.92);
+            }
+
+            #chat-send.is-cooldown::after {
+                content: attr(data-cooldown);
+                position: absolute;
+                top: -6px;
+                right: -6px;
+                background: #ffffff;
+                color: #b91c1c;
+                border-radius: 10px;
+                padding: 2px 5px;
+                font-size: 10px;
+                font-weight: 600;
+                line-height: 1;
+                box-shadow: 0 6px 14px rgba(0,0,0,0.18);
             }
 
             .icon-slot {
@@ -543,6 +563,9 @@ function createChatWidget() {
     let activeAbortController = null;
     let selectedLanguage = 'ESP';
     let lastSendAt = 0;
+    let cooldownUntil = 0;
+    let cooldownInterval = null;
+    const COOLDOWN_MS = 10000;
 
     const LANG_OPTIONS = {
         ESP: { className: 'flag-es', label: 'Idioma: Español' },
@@ -632,6 +655,37 @@ function createChatWidget() {
     const endpointUrl = 'https://kaimcp-a9h3ccb5fngxhmag.eastus-01.azurewebsites.net/api/uid_memoria';
     const chatUrl = 'https://kaimcp-a9h3ccb5fngxhmag.eastus-01.azurewebsites.net/api/kai_chat_web';
     const DEBUG_SSE = false;
+
+    function updateCooldownUi() {
+        const remaining = Math.max(0, cooldownUntil - Date.now());
+        if (remaining <= 0) {
+            sendButton.classList.remove('is-cooldown');
+            sendButton.removeAttribute('data-cooldown');
+            sendButton.setAttribute('aria-label', 'Enviar mensaje');
+            return;
+        }
+
+        const seconds = Math.ceil(remaining / 1000);
+        sendButton.classList.add('is-cooldown');
+        sendButton.setAttribute('data-cooldown', `${seconds}s`);
+        sendButton.setAttribute('aria-label', `Enviar mensaje. Espera ${seconds} segundos`);
+    }
+
+    function startCooldownTimer() {
+        cooldownUntil = Date.now() + COOLDOWN_MS;
+        updateCooldownUi();
+        if (cooldownInterval) {
+            clearInterval(cooldownInterval);
+        }
+        cooldownInterval = setInterval(() => {
+            updateCooldownUi();
+            if (Date.now() >= cooldownUntil) {
+                clearInterval(cooldownInterval);
+                cooldownInterval = null;
+                updateCooldownUi();
+            }
+        }, 250);
+    }
 
     function getCookie(name) {
         const value = `; ${document.cookie}`;
@@ -1308,10 +1362,11 @@ function createChatWidget() {
         scrollToBottom();
 
         const now = Date.now();
-        if (now - lastSendAt < 10000) {
+        if (now < cooldownUntil || now - lastSendAt < COOLDOWN_MS) {
             return;
         }
         lastSendAt = now;
+        startCooldownTimer();
 
         const uid = (getCookie('kai_uid') || '').trim();
         updateMessageStatus(userMessageEl, 'delivered');
