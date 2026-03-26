@@ -1334,10 +1334,6 @@ function createChatWidget() {
         let hasStarted = false;
 
         try {
-            if (activeAbortController) {
-                activeAbortController.abort();
-            }
-
             activeAbortController = new AbortController();
 
             const res = await fetch(chatUrl, {
