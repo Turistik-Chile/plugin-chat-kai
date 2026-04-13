@@ -799,6 +799,20 @@ function createChatWidget() {
         return null;
     }
 
+    function removePaymentCodesFromBotMessage(text) {
+        let messageText = String(text || '');
+        if (!messageText) return '';
+
+        messageText = messageText
+            .split(PAYMENT_STATUS_CODES.success).join('')
+            .split(PAYMENT_STATUS_CODES.fail).join('');
+
+        return messageText
+            .replace(/[ \t]{2,}/g, ' ')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+    }
+
     function applyBotMessageVariant(messageEl, text) {
         if (!messageEl || !messageEl.classList) return null;
 
@@ -820,7 +834,8 @@ function createChatWidget() {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}`;
         if (type === 'bot') {
-            messageDiv.innerHTML = renderMarkdownStreaming(text);
+            const displayText = removePaymentCodesFromBotMessage(text);
+            messageDiv.innerHTML = renderMarkdownStreaming(displayText);
             applyBotMessageVariant(messageDiv, text);
         } else {
             const textDiv = document.createElement('div');
@@ -836,15 +851,6 @@ function createChatWidget() {
                 messageDiv.appendChild(statusDiv);
             }
         }
-        messagesArea.appendChild(messageDiv);
-        return messageDiv;
-    }
-
-    function appendPaymentMessage(text, status) {
-        const messageDiv = document.createElement('div');
-        const statusClass = status === 'success' ? 'payment-success' : 'payment-fail';
-        messageDiv.className = `message bot ${statusClass}`;
-        messageDiv.textContent = text;
         messagesArea.appendChild(messageDiv);
         return messageDiv;
     }
@@ -931,48 +937,18 @@ function createChatWidget() {
         }
     }
 
-    function parseBooleanParam(value) {
-        if (value == null) return null;
-        const normalized = String(value).trim().toLowerCase();
-        if (normalized === 'gjbdfp433nkng3') return true;
-        if (normalized === 'fg4gk3p21lasjd') return false;
-        return null;
-    }
-
-    let autoMessageHandled = false;
     function handleAutoMessageFromUrl() {
-        if (autoMessageHandled) return;
-
         const params = new URLSearchParams(window.location.search);
         const uidParam = params.get('uid');
-        const autorizadoParam = params.get('kihp23ldsk');
-        const autorizado = parseBooleanParam(autorizadoParam);
-
-        const hasAutoParams = uidParam !== null || autorizadoParam !== null;
 
         if (uidParam) {
             setCookie('kai_uid', uidParam);
         }
 
-        if (hasAutoParams && !isOpen) {
+        if (uidParam !== null && !isOpen) {
             isOpen = true;
             chatContainer.classList.add('is-open');
         }
-
-        if (autorizado === null) return;
-        autoMessageHandled = true;
-
-        showTypingIndicator();
-
-        setTimeout(() => {
-            removeTypingIndicator();
-            if (autorizado) {
-                appendPaymentMessage('✅ Tu pago fue autorizado. Hemos enviado la boleta a tu correo electrónico.', 'success');
-            } else {
-                appendPaymentMessage('❌ Hubo un error con la autorización del pago', 'fail');
-            }
-            scrollToBottom();
-        }, 2200);
     }
 
     function createBotMessageElement() {
@@ -1340,7 +1316,8 @@ function createChatWidget() {
             const text = await response.text();
             if (text) {
                 const bodyText = extractBodyText(text);
-                messageEl.innerHTML = renderMarkdownStreaming(bodyText);
+                const displayText = removePaymentCodesFromBotMessage(bodyText);
+                messageEl.innerHTML = renderMarkdownStreaming(displayText);
                 applyBotMessageVariant(messageEl, bodyText);
             }
             return;
@@ -1368,7 +1345,8 @@ function createChatWidget() {
                 const slice = pendingText.slice(0, STREAM_CHARS_PER_TICK);
                 pendingText = pendingText.slice(STREAM_CHARS_PER_TICK);
                 displayText += slice;
-                messageEl.innerHTML = renderMarkdownStreaming(displayText);
+                const cleanedDisplayText = removePaymentCodesFromBotMessage(displayText);
+                messageEl.innerHTML = renderMarkdownStreaming(cleanedDisplayText);
                 applyBotMessageVariant(messageEl, displayText);
                 scrollToBottom();
             }, STREAM_CHAR_DELAY_MS);
