@@ -779,11 +779,49 @@ function createChatWidget() {
         messagesArea.scrollTop = messagesArea.scrollHeight;
     }
 
+    const PAYMENT_STATUS_CODES = {
+        success: '#7qK2mP9x',
+        fail: '#3vN8rT4b'
+    };
+
+    function detectPaymentStatusFromBotMessage(text) {
+        const messageText = String(text || '');
+        if (!messageText) return null;
+
+        if (messageText.includes(PAYMENT_STATUS_CODES.success)) {
+            return 'success';
+        }
+
+        if (messageText.includes(PAYMENT_STATUS_CODES.fail)) {
+            return 'fail';
+        }
+
+        return null;
+    }
+
+    function applyBotMessageVariant(messageEl, text) {
+        if (!messageEl || !messageEl.classList) return null;
+
+        messageEl.classList.remove('payment-success', 'payment-fail');
+        const paymentStatus = detectPaymentStatusFromBotMessage(text);
+        if (paymentStatus === 'success') {
+            messageEl.classList.add('payment-success');
+            return paymentStatus;
+        }
+        if (paymentStatus === 'fail') {
+            messageEl.classList.add('payment-fail');
+            return paymentStatus;
+        }
+
+        return null;
+    }
+
     function appendMessage(text, type) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}`;
         if (type === 'bot') {
             messageDiv.innerHTML = renderMarkdownStreaming(text);
+            applyBotMessageVariant(messageDiv, text);
         } else {
             const textDiv = document.createElement('div');
             textDiv.className = 'message-text';
@@ -872,7 +910,8 @@ function createChatWidget() {
                 if (data && Array.isArray(data.memoria_corta)) {
                     clearMessages();
                     data.memoria_corta.forEach((item) => {
-                        if (item.mensaje_usuario) {
+                        const isPaymentBotMessage = detectPaymentStatusFromBotMessage(item.mensaje_bot);
+                        if (item.mensaje_usuario && !isPaymentBotMessage) {
                             const userMessageEl = appendMessage(item.mensaje_usuario, 'user');
                             updateMessageStatus(userMessageEl, 'read');
                         }
@@ -1302,6 +1341,7 @@ function createChatWidget() {
             if (text) {
                 const bodyText = extractBodyText(text);
                 messageEl.innerHTML = renderMarkdownStreaming(bodyText);
+                applyBotMessageVariant(messageEl, bodyText);
             }
             return;
         }
@@ -1329,6 +1369,7 @@ function createChatWidget() {
                 pendingText = pendingText.slice(STREAM_CHARS_PER_TICK);
                 displayText += slice;
                 messageEl.innerHTML = renderMarkdownStreaming(displayText);
+                applyBotMessageVariant(messageEl, displayText);
                 scrollToBottom();
             }, STREAM_CHAR_DELAY_MS);
         }
